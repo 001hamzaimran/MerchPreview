@@ -1,0 +1,11 @@
+{
+  "name": "MerchPreview Personalization",
+  "button_text": "Personalize & Preview Design",
+  "modal_heading": "Personalize Your Product",
+  "upload_title": "Upload your design",
+  "upload_subtitle": "Supported formats: PNG, JPG, WEBP, SVG (Max 10MB)",
+  "preview_title": "Live Product Preview",
+  "add_to_cart": "Apply & Add to Cart",
+  "reset": "Reset",
+  "zoom": "Scale Design"
+}

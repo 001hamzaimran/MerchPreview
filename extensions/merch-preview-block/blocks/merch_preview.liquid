@@ -1,0 +1,352 @@
+{% comment %}
+  MerchPreview Storefront Personalization App Block
+  Renders customizer trigger button and live interactive preview modal on product pages.
+{% endcomment %}
+
+{{ 'merch-preview.css' | asset_url | stylesheet_tag }}
+
+<div
+  class="mp-block-container"
+  id="mp-block-{{ block.id }}"
+  data-product-id="{{ product.id }}"
+  data-product-title="{{ product.title | escape }}"
+  data-product-image="{{ product.featured_image | image_url: width: 1200 }}"
+  data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+>
+  {% comment %} Trigger Button {% endcomment %}
+  <button
+    type="button"
+    class="mp-trigger-btn {% if block.settings.button_full_width %}mp-btn-full{% endif %}"
+    id="mp-trigger-btn-{{ block.id }}"
+    style="
+      --mp-btn-bg: {{ block.settings.button_bg_color }};
+      --mp-btn-color: {{ block.settings.button_text_color }};
+      --mp-btn-radius: {{ block.settings.button_border_radius }}px;
+      --mp-btn-pad-y: {{ block.settings.button_padding_y }}px;
+      --mp-btn-pad-x: {{ block.settings.button_padding_x }}px;
+    "
+  >
+    {% if block.settings.show_icon %}
+      <svg class="mp-btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+      </svg>
+    {% endif %}
+    <span>{{ block.settings.button_text }}</span>
+  </button>
+
+  {% comment %} Storefront Personalization Modal {% endcomment %}
+  <div
+    class="mp-modal-backdrop"
+    id="mp-modal-{{ block.id }}"
+    aria-hidden="true"
+    style="--mp-accent: {{ block.settings.modal_accent_color }};"
+  >
+    <div class="mp-modal-dialog" role="dialog" aria-modal="true">
+      {% comment %} Modal Header {% endcomment %}
+      <div class="mp-modal-header">
+        <div class="mp-modal-header-title-wrap">
+          <div class="mp-modal-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+            MerchPreview
+          </div>
+          <h3 class="mp-modal-heading">{{ block.settings.modal_heading }}</h3>
+        </div>
+        <button type="button" class="mp-modal-close-btn" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      {% comment %} Modal Body (2-Column Grid) {% endcomment %}
+      <div class="mp-modal-body">
+        {% comment %} Left Column: Live Canvas Preview {% endcomment %}
+        <div class="mp-canvas-column">
+          <div class="mp-preview-header">
+            <span class="mp-preview-label">Live Visual Preview</span>
+            <div class="mp-preview-actions">
+              <button type="button" class="mp-preview-toggle-btn active" title="Toggle print area guide">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/>
+                </svg>
+                Guide Box
+              </button>
+              <button type="button" class="mp-preview-reset-btn" title="Reset artwork positioning">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                  <path d="M3 3v5h5"/>
+                </svg>
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div class="mp-canvas-viewport" id="mp-viewport-{{ block.id }}">
+            {% comment %} Base Product Mockup Image {% endcomment %}
+            <img
+              src="{{ product.featured_image | image_url: width: 1200 }}"
+              alt="{{ product.title | escape }}"
+              width="{{ product.featured_image.width | default: 1200 }}"
+              height="{{ product.featured_image.height | default: 1200 }}"
+              loading="lazy"
+              class="mp-product-img"
+              id="mp-product-img-{{ block.id }}"
+              crossorigin="anonymous"
+            />
+
+            {% comment %} Printable Bounding Box Overlay {% endcomment %}
+            <div class="mp-print-box" id="mp-print-box-{{ block.id }}">
+              <div class="mp-print-box-guide"></div>
+              
+              {% comment %} Customer Artwork Layer inside Print Box {% endcomment %}
+              <div class="mp-artwork-container" id="mp-artwork-wrap-{{ block.id }}">
+                <img
+                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E"
+                  alt="Customer Artwork"
+                  width="600"
+                  height="600"
+                  loading="lazy"
+                  class="mp-artwork-img"
+                  id="mp-artwork-img-{{ block.id }}"
+                  style="display: none;"
+                />
+                <div class="mp-artwork-placeholder" id="mp-placeholder-{{ block.id }}">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                  </svg>
+                  <span>Upload artwork to preview here</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mp-canvas-footer-tip">
+            💡 Drag your artwork inside the box to reposition. Use slider on right to resize.
+          </div>
+        </div>
+
+        {% comment %} Right Column: Upload & Customization Controls {% endcomment %}
+        <div class="mp-controls-column">
+          {% comment %} Drag & Drop File Upload Box {% endcomment %}
+          <div class="mp-upload-section">
+            <label class="mp-section-title">1. Upload Your Artwork</label>
+            <div class="mp-dropzone" id="mp-dropzone-{{ block.id }}">
+              <input
+                type="file"
+                class="mp-file-input"
+                id="mp-file-input-{{ block.id }}"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+              />
+              <div class="mp-dropzone-inner">
+                <div class="mp-dropzone-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </div>
+                <div class="mp-dropzone-text">
+                  <strong class="mp-dropzone-cta">Click to browse</strong> or drag & drop artwork
+                </div>
+                <div class="mp-dropzone-hint">PNG, JPG, WEBP or SVG (Max 10MB)</div>
+              </div>
+            </div>
+
+            {% comment %} Uploaded File Status Card {% endcomment %}
+            <div class="mp-file-card" id="mp-file-card-{{ block.id }}" style="display: none;">
+              <div class="mp-file-card-thumb">
+                <img
+                  id="mp-thumb-img-{{ block.id }}"
+                  src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E"
+                  alt="Thumbnail"
+                  width="48"
+                  height="48"
+                  loading="lazy"
+                />
+              </div>
+              <div class="mp-file-card-details">
+                <span class="mp-file-card-name" id="mp-file-name-{{ block.id }}">artwork.png</span>
+                <span class="mp-file-card-size" id="mp-file-size-{{ block.id }}">1.2 MB</span>
+              </div>
+              <button type="button" class="mp-file-remove-btn" id="mp-remove-btn-{{ block.id }}" title="Remove file">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {% comment %} Artwork Scaling Slider & Alignment Controls {% endcomment %}
+          <div class="mp-adjust-section" id="mp-adjust-section-{{ block.id }}" style="opacity: 0.5; pointer-events: none;">
+            <label class="mp-section-title">2. Adjust Artwork Scale & Position</label>
+            
+            <div class="mp-scale-control">
+              <div class="mp-scale-header">
+                <span>Scale Size</span>
+                <span class="mp-scale-val" id="mp-scale-val-{{ block.id }}">100%</span>
+              </div>
+              <input
+                type="range"
+                min="30"
+                max="250"
+                value="100"
+                class="mp-scale-slider"
+                id="mp-scale-slider-{{ block.id }}"
+              />
+            </div>
+
+            <div class="mp-align-presets">
+              <button type="button" class="mp-preset-btn" id="mp-center-btn-{{ block.id }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                Center
+              </button>
+              <button type="button" class="mp-preset-btn" id="mp-fit-btn-{{ block.id }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                </svg>
+                Fit Area
+              </button>
+              <button type="button" class="mp-preset-btn" id="mp-rotate-btn-{{ block.id }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                Rotate 90°
+              </button>
+            </div>
+          </div>
+
+          {% comment %} Action Buttons {% endcomment %}
+          <div class="mp-modal-actions">
+            <button
+              type="button"
+              class="mp-apply-btn"
+              id="mp-apply-btn-{{ block.id }}"
+              disabled
+            >
+              <svg class="mp-cart-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="21" r="1" />
+                <circle cx="20" cy="21" r="1" />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+              </svg>
+              <span>{{ block.settings.apply_button_text }}</span>
+            </button>
+            <div class="mp-action-disclaimer">
+              ✓ Custom artwork will be securely attached to your order.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ 'merch-preview.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "MerchPreview Personalize",
+  "target": "section",
+  "templates": ["product"],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Button Settings"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Label",
+      "default": "Personalize & Preview Design"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon",
+      "label": "Show Sparkle Icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "button_full_width",
+      "label": "Full Width Button",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "button_bg_color",
+      "label": "Button Background Color",
+      "default": "#4f46e5"
+    },
+    {
+      "type": "color",
+      "id": "button_text_color",
+      "label": "Button Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Button Border Radius",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "button_padding_y",
+      "min": 6,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Vertical Padding",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "button_padding_x",
+      "min": 12,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Horizontal Padding",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Modal & Customizer Settings"
+    },
+    {
+      "type": "text",
+      "id": "modal_heading",
+      "label": "Modal Heading",
+      "default": "Personalize Your Product"
+    },
+    {
+      "type": "text",
+      "id": "apply_button_text",
+      "label": "Apply & Cart Button Text",
+      "default": "Apply Design & Add to Cart"
+    },
+    {
+      "type": "color",
+      "id": "modal_accent_color",
+      "label": "Accent Color",
+      "default": "#4f46e5"
+    }
+  ]
+}
+{% endschema %}

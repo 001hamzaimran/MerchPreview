@@ -1,0 +1,6 @@
+name = "merch-preview-block"
+type = "theme"
+uid = "145d9a20-d890-5cc2-4575-62f7fa30dd410b10436c"
+
+[build]
+include_config_on_deploy = true
