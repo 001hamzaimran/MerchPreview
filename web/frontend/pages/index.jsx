@@ -7,26 +7,29 @@ import {
   HowItWorks,
   RecentConfigurations,
   Toast,
+  LoadingState,
   LayersIcon,
   SparklesIcon,
   CheckCircleIcon,
   SlidersIcon,
 } from "../components";
-import { INITIAL_SAVED_CONFIGURATIONS } from "../data/mockData";
 
 export default function Dashboard() {
-  const [configurations, setConfigurations] = useState(INITIAL_SAVED_CONFIGURATIONS);
+  const [configurations, setConfigurations] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBlockAdded, setIsBlockAdded] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Fetch configurations from MongoDB database
+  // Fetch configurations and block status strictly from MongoDB for this store
   useEffect(() => {
     let isMounted = true;
+
     const fetchDbConfigs = async () => {
       try {
         const res = await fetch("/api/configurations");
         if (res.ok) {
           const data = await res.json();
-          if (Array.isArray(data) && data.length > 0 && isMounted) {
+          if (Array.isArray(data) && isMounted) {
             const formatted = data.map((item) => ({
               id: item._id || item.id,
               productId: item.productId,
@@ -43,14 +46,38 @@ export default function Dashboard() {
           }
         }
       } catch (err) {
-        console.warn("Using default configurations:", err);
+        console.warn("Error fetching store configurations:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    const fetchBlockStatus = async () => {
+      try {
+        const res = await fetch("/api/themes/block-status");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && typeof data.isBlockAdded === "boolean") {
+            setIsBlockAdded(data.isBlockAdded);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not check block status:", e);
       }
     };
 
     fetchDbConfigs();
+    fetchBlockStatus();
+
+    // Re-check block status when window regains focus (e.g. after returning from theme editor)
+    const onWindowFocus = () => {
+      fetchBlockStatus();
+    };
+    window.addEventListener("focus", onWindowFocus);
 
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", onWindowFocus);
     };
   }, []);
 
@@ -64,13 +91,17 @@ export default function Dashboard() {
     () => new Set(configurations.map((c) => c.productId)).size,
     [configurations]
   );
-  const personalizationStatus = configuredProductsCount > 0 ? "Active" : "Not Set";
+  const personalizationStatus = isBlockAdded
+    ? "Active"
+    : configuredProductsCount > 0
+    ? "Configured"
+    : "Not Set";
 
   const handleDeleteConfig = async (id) => {
     try {
       await fetch(`/api/configurations/${id}`, { method: "DELETE" });
     } catch (e) {
-      console.warn("Local delete:", e);
+      console.warn("Delete error:", e);
     }
     setConfigurations((prev) => prev.filter((c) => c.id !== id));
     setToastMessage("Configuration deleted from database.");
@@ -80,15 +111,8 @@ export default function Dashboard() {
     const item = configurations.find((c) => c.id === id);
     if (!item) return;
 
-    const newItem = {
-      ...item,
-      id: `cfg_${Date.now().toString().slice(-4)}`,
-      productTitle: `${item.productTitle} (Copy)`,
-      lastUpdated: "Just now",
-    };
-
     try {
-      await fetch("/api/configurations", {
+      const res = await fetch("/api/configurations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -97,11 +121,31 @@ export default function Dashboard() {
           productTitle: `${item.productTitle} (Copy)`,
         }),
       });
+
+      if (res.ok) {
+        const saved = await res.json();
+        const newDoc = saved?.data || saved;
+        const newItem = {
+          ...item,
+          id: newDoc._id || newDoc.id || `cfg_${Date.now().toString().slice(-4)}`,
+          productId: newDoc.productId || `${item.productId}_copy`,
+          productTitle: newDoc.productTitle || `${item.productTitle} (Copy)`,
+          lastUpdated: "Just now",
+        };
+        setConfigurations((prev) => [newItem, ...prev]);
+      } else {
+        const fallbackItem = {
+          ...item,
+          id: `cfg_${Date.now().toString().slice(-4)}`,
+          productTitle: `${item.productTitle} (Copy)`,
+          lastUpdated: "Just now",
+        };
+        setConfigurations((prev) => [fallbackItem, ...prev]);
+      }
     } catch (e) {
-      console.warn("Local duplicate:", e);
+      console.warn("Local duplicate fallback:", e);
     }
 
-    setConfigurations((prev) => [newItem, ...prev]);
     setToastMessage("Configuration duplicated.");
   };
 
@@ -121,6 +165,11 @@ export default function Dashboard() {
       <SetupProgressCard
         hasConfiguredProducts={configuredProductsCount > 0}
         configuredCount={configuredProductsCount}
+        isBlockAdded={isBlockAdded}
+        onBlockVerified={() => {
+          setIsBlockAdded(true);
+          setToastMessage("🎉 MerchPreview block verified! Setup is 100% complete.");
+        }}
       />
 
       {/* Statistics Section */}
@@ -146,7 +195,7 @@ export default function Dashboard() {
         <StatCard
           label="Personalization Status"
           value={personalizationStatus}
-          subtext="App block state"
+          subtext={isBlockAdded ? "Live on Storefront" : "App Block Pending"}
           icon={<SparklesIcon size={18} />}
         />
       </div>
@@ -157,11 +206,15 @@ export default function Dashboard() {
       </div>
 
       {/* Recent Configurations Table Section */}
-      <RecentConfigurations
-        configurations={configurations}
-        onDelete={handleDeleteConfig}
-        onDuplicate={handleDuplicateConfig}
-      />
+      {isLoading ? (
+        <LoadingState label="Loading your store's configurations..." />
+      ) : (
+        <RecentConfigurations
+          configurations={configurations}
+          onDelete={handleDeleteConfig}
+          onDuplicate={handleDuplicateConfig}
+        />
+      )}
 
       {/* Toast Feedback */}
       <Toast

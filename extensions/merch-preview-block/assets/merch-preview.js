@@ -15,6 +15,13 @@
       if (block.dataset.mpInitialized) return;
       block.dataset.mpInitialized = "true";
 
+      // Notify backend that theme app block is rendered on storefront
+      try {
+        fetch("/api/themes/verify-block", { method: "POST", keepalive: true }).catch(() => {});
+      } catch (e) {
+        // ignore
+      }
+
       const productId = block.dataset.productId;
       const variantId = block.dataset.variantId;
       const productTitle = block.dataset.productTitle;
@@ -30,12 +37,12 @@
       const fileNameEl = modal.querySelector(".mp-file-card-name");
       const fileSizeEl = modal.querySelector(".mp-file-card-size");
       const removeBtn = modal.querySelector(".mp-file-remove-btn");
-      
+
       const printBox = modal.querySelector(".mp-print-box");
       const artworkWrap = modal.querySelector(".mp-artwork-container");
       const artworkImg = modal.querySelector(".mp-artwork-img");
       const placeholder = modal.querySelector(".mp-artwork-placeholder");
-      
+
       const adjustSection = modal.querySelector(".mp-adjust-section");
       const scaleSlider = modal.querySelector(".mp-scale-slider");
       const scaleVal = modal.querySelector(".mp-scale-val");
@@ -368,3 +375,8 @@
     initMerchPreview();
   }
 })();
+
+window.addEventListener("DOMContentLoaded", () => {
+  const { productId, store, productPrice, variantId } = window.Configuration;
+  console.log(productId, store, productPrice, variantId);
+});

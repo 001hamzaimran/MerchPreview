@@ -32,6 +32,10 @@ const SettingsSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isAppBlockAdded: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

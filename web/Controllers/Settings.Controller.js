@@ -2,11 +2,23 @@ import Settings from "../Models/Settings.model.js";
 
 /**
  * GET /api/settings
- * Retrieves Cloudinary keys and settings for the authenticated store
+ * Retrieves Cloudinary keys and settings strictly scoped to the store session
  */
 export const getSettings = async (req, res) => {
   try {
-    const shop = res.locals?.shopify?.session?.shop || req.query?.shop || "default-shop.myshopify.com";
+    const shop = res.locals?.shopify?.session?.shop || req.query?.shop;
+
+    if (!shop) {
+      return res.status(200).json({
+        cloudName: "",
+        apiKey: "",
+        apiSecret: "",
+        uploadFolder: "merchpreview_custom_designs",
+        autoValidateDpi: true,
+        autoSaveCanvas: true,
+      });
+    }
+
     let settings = await Settings.findOne({ shop });
 
     if (!settings) {
@@ -18,6 +30,7 @@ export const getSettings = async (req, res) => {
         uploadFolder: "merchpreview_custom_designs",
         autoValidateDpi: true,
         autoSaveCanvas: true,
+        isAppBlockAdded: false,
       };
     }
 
@@ -30,11 +43,16 @@ export const getSettings = async (req, res) => {
 
 /**
  * POST /api/settings
- * Saves or updates Cloudinary keys and store settings in MongoDB
+ * Saves or updates Cloudinary keys and store settings strictly scoped to the store session
  */
 export const saveSettings = async (req, res) => {
   try {
-    const shop = res.locals?.shopify?.session?.shop || req.body?.shop || "default-shop.myshopify.com";
+    const shop = res.locals?.shopify?.session?.shop || req.body?.shop || req.query?.shop;
+
+    if (!shop) {
+      return res.status(400).json({ error: "Shop session is required" });
+    }
+
     const {
       cloudName,
       apiKey,
