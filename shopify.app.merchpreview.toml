@@ -2,7 +2,7 @@
 
 client_id = "2cd3eb58ed85704a7a250d70213d4f0b"
 name = "MerchPreview"
-application_url = "https://example.com"
+application_url = "https://merchpreview-3e72234e1c60.herokuapp.com/"
 embedded = true
 
 [access_scopes]
@@ -11,17 +11,35 @@ scopes = "read_assigned_fulfillment_orders,write_assigned_fulfillment_orders,rea
 optional_scopes = []
 use_legacy_install_flow = false
 
+
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [
+  "https://merchpreview-3e72234e1c60.herokuapp.com//auth/callback",
+  "https://merchpreview-3e72234e1c60.herokuapp.com//auth/shopify/callback",
+  "https://merchpreview-3e72234e1c60.herokuapp.com//api/auth/callback"
+]
 
 [webhooks]
 api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/data_request"
+  compliance_topics = [ "customers/data_request" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/customers/redact"
+  compliance_topics = [ "customers/redact" ]
+
+  [[webhooks.subscriptions]]
+  uri = "/webhooks/shop/redact"
+  compliance_topics = [ "shop/redact" ]
+
 
 [build]
 automatically_update_urls_on_dev = true
 
 
 [app_proxy]
-url = "https://example.com/customapi"
+url = "https://merchpreview-3e72234e1c60.herokuapp.com/customapi"
 subpath = "proxy"
 prefix = "apps"
