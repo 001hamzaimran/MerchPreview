@@ -1,6 +1,18 @@
 import { BillingInterval, LATEST_API_VERSION } from "@shopify/shopify-api";
 import { shopifyApp } from "@shopify/shopify-app-express";
 import { SQLiteSessionStorage } from "@shopify/shopify-app-session-storage-sqlite";
+import hasValidAccessTokenModule from "@shopify/shopify-app-express/dist/cjs/middlewares/has-valid-access-token.js";
+
+// Ensure hasValidAccessToken catches 403 Forbidden responses (treating them as invalid session to trigger reauth without crashing the process)
+const origHasValidAccessToken = hasValidAccessTokenModule.hasValidAccessToken;
+hasValidAccessTokenModule.hasValidAccessToken = async (api, session) => {
+  try {
+    return await origHasValidAccessToken(api, session);
+  } catch (error) {
+    console.warn("hasValidAccessToken error (treating as invalid session to reauthenticate):", error.message);
+    return false;
+  }
+};
 
 const DB_PATH = `${process.cwd()}/database.sqlite`;
 

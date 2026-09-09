@@ -55,7 +55,14 @@ app.post(
 // If you are adding routes outside of the /api path, remember to
 // also add a proxy rule for them in web/frontend/vite.config.js
 
-app.use("/api/*", shopify.validateAuthenticatedSession());
+app.use("/api/*", async (req, res, next) => {
+  try {
+    return await shopify.validateAuthenticatedSession()(req, res, next);
+  } catch (err) {
+    console.error("Session validation error:", err.message);
+    return res.status(403).json({ error: "Session invalid or reauthorization required" });
+  }
+});
 
 app.use(express.json());
 
