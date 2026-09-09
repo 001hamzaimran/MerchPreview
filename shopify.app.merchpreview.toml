@@ -14,9 +14,9 @@ use_legacy_install_flow = false
 
 [auth]
 redirect_urls = [
-  "https://merchpreview-3e72234e1c60.herokuapp.com//auth/callback",
-  "https://merchpreview-3e72234e1c60.herokuapp.com//auth/shopify/callback",
-  "https://merchpreview-3e72234e1c60.herokuapp.com//api/auth/callback"
+  "https://merchpreview-3e72234e1c60.herokuapp.com/auth/callback",
+  "https://merchpreview-3e72234e1c60.herokuapp.com/auth/shopify/callback",
+  "https://merchpreview-3e72234e1c60.herokuapp.com/api/auth/callback"
 ]
 
 [webhooks]
