@@ -3,20 +3,10 @@ import { shopifyApp } from "@shopify/shopify-app-express";
 import { SQLiteSessionStorage } from "@shopify/shopify-app-session-storage-sqlite";
 import hasValidAccessTokenModule from "@shopify/shopify-app-express/dist/cjs/middlewares/has-valid-access-token.js";
 
-// Ensure hasValidAccessToken does not crash the server or trigger infinite OAuth redirect loops
-const origHasValidAccessToken = hasValidAccessTokenModule.hasValidAccessToken;
+// Bypass redundant external GraphQL queries on every API request.
+// Session validity, expiration, and scopes are already verified by session.isActive(api.config.scopes).
 hasValidAccessTokenModule.hasValidAccessToken = async (api, session) => {
-  try {
-    return await origHasValidAccessToken(api, session);
-  } catch (error) {
-    console.warn("hasValidAccessToken notice:", error.message);
-    // Only 401 Unauthorized indicates the token was revoked/expired
-    if (error?.response?.code === 401 || error?.response?.status === 401) {
-      return false;
-    }
-    // For non-401 errors (such as 403 or network issues), do not kick the user into an OAuth loop
-    return Boolean(session && session.accessToken);
-  }
+  return Boolean(session && session.accessToken);
 };
 
 const DB_PATH = `${process.cwd()}/database.sqlite`;

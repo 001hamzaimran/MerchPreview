@@ -3,18 +3,15 @@ export const GETPRODUCTS = `query GetProducts {
     nodes {
       id
       title
-      media(first: 250){
-        edges{
-          node{
-            id
-            preview{
-              image{
-                url
-              }
-            }
-          }
+      images(first: 50) {
+        nodes {
+          id
+          url
+          altText
+          width
+          height
         }
       }
     }
   }
-}`
+}`;

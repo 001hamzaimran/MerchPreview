@@ -30,8 +30,13 @@ export function normalizeShopifyProduct(product) {
           height: img.height || 800,
         };
       });
-  } else if (product.images && Array.isArray(product.images)) {
-    images = product.images.map((img, index) => {
+  } else if (product.images) {
+    const rawImages = Array.isArray(product.images)
+      ? product.images
+      : Array.isArray(product.images?.nodes)
+      ? product.images.nodes
+      : [];
+    images = rawImages.map((img, index) => {
       if (typeof img === "string") {
         return {
           id: `img_${product.id}_${index}`,
