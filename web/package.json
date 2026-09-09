@@ -10,7 +10,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=16.13.0"
+    "node": ">=20.19.0"
   },
   "dependencies": {
     "@shopify/shopify-app-express": "^5.0.8",

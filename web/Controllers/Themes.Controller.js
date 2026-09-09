@@ -28,12 +28,12 @@ export const getThemeEditorUrl = async (req, res) => {
       }
     }
 
-    // Build dynamic editor URL
+    // Build dynamic editor URL deep-linked directly to product template
     let editorUrl = "";
     if (themeId && storeSlug) {
-      editorUrl = `https://admin.shopify.com/store/${storeSlug}/themes/${themeId}/editor`;
+      editorUrl = `https://admin.shopify.com/store/${storeSlug}/themes/${themeId}/editor?template=product`;
     } else if (shop) {
-      editorUrl = `https://${shop}/admin/themes/current/editor`;
+      editorUrl = `https://${shop}/admin/themes/current/editor?template=product`;
     } else {
       editorUrl = "https://admin.shopify.com";
     }

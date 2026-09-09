@@ -16,12 +16,12 @@ export async function openThemeEditor() {
     console.warn("Could not retrieve live theme editor URL from API:", err);
   }
 
-  // Fallback: Use dynamic shop param from URL
+  // Fallback: Use dynamic shop param from URL deep-linked to product template
   try {
     const params = new URLSearchParams(window.location.search);
     const shop = params.get("shop");
     if (shop) {
-      window.open(`https://${shop}/admin/themes/current/editor`, "_blank");
+      window.open(`https://${shop}/admin/themes/current/editor?template=product`, "_blank");
       return;
     }
   } catch (e) {
@@ -39,7 +39,7 @@ export function getThemeEditorUrl() {
     const params = new URLSearchParams(window.location.search);
     const shop = params.get("shop");
     if (shop) {
-      return `https://${shop}/admin/themes/current/editor`;
+      return `https://${shop}/admin/themes/current/editor?template=product`;
     }
   } catch (e) {
     // ignore

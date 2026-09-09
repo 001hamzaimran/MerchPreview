@@ -306,12 +306,12 @@
           applyBtn.innerHTML = `<span>Saving & Adding to Cart...</span>`;
 
           try {
-            // Storefront Line Item Properties
+            // Storefront Line Item Properties (visible to merchants in Admin Order details)
             const customProperties = {
-              "_Artwork Name": artworkFile?.name || "custom-design.png",
-              "_Print Area Placement": `X:${(printArea.x * 100).toFixed(0)}% Y:${(printArea.y * 100).toFixed(0)}% W:${(printArea.width * 100).toFixed(0)}% H:${(printArea.height * 100).toFixed(0)}%`,
-              "_Artwork Scale": `${(scale * 100).toFixed(0)}%`,
-              "_Artwork Rotation": `${rotation}°`,
+              "Artwork Name": artworkFile?.name || "custom-design.png",
+              "Print Area Placement": `X:${(printArea.x * 100).toFixed(0)}% Y:${(printArea.y * 100).toFixed(0)}% W:${(printArea.width * 100).toFixed(0)}% H:${(printArea.height * 100).toFixed(0)}%`,
+              "Artwork Scale": `${(scale * 100).toFixed(0)}%`,
+              "Artwork Rotation": `${rotation}°`,
             };
 
             // Post to Shopify Ajax Cart API

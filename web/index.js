@@ -1,4 +1,5 @@
 // @ts-check
+import "./Utils/polyfill.js";
 import { join } from "path";
 import { readFileSync } from "fs";
 import express from "express";
@@ -24,6 +25,17 @@ const STATIC_PATH =
     : `${process.cwd()}/frontend/`;
 
 const app = express();
+
+// Enforce HTTPS in production behind reverse proxies
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+  app.use((req, res, next) => {
+    if (req.headers["x-forwarded-proto"] && req.headers["x-forwarded-proto"] !== "https") {
+      return res.redirect(`https://${req.hostname}${req.url}`);
+    }
+    next();
+  });
+}
 
 // Connect MongoDB database
 connectDB();
