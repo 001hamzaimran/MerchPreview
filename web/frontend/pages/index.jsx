@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
+import { TitleBar } from "@shopify/app-bridge-react";
 import {
   Layout,
   WelcomeBanner,
@@ -158,6 +159,9 @@ export default function Dashboard() {
 
   return (
     <Layout>
+      {/* App Bridge TitleBar */}
+      <TitleBar title="Dashboard" />
+
       {/* Welcome Banner */}
       <WelcomeBanner onLearnMore={handleScrollToHowItWorks} />
 

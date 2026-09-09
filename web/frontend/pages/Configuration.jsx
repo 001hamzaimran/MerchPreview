@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { TitleBar } from "@shopify/app-bridge-react";
 import {
   Layout,
   PageHeader,
@@ -193,26 +194,30 @@ export default function ConfigurationPage() {
 
   return (
     <Layout>
+      {/* App Bridge TitleBar with Native Breadcrumb */}
+      <TitleBar title="Configure Product">
+        <a variant="breadcrumb" href="/">
+          Dashboard
+        </a>
+      </TitleBar>
+
       {/* Top Page Header */}
       <PageHeader
         title="Configure Product"
         subtitle="Define where customer artwork will appear on your product image."
+        backAction={{
+          content: "Back to Dashboard",
+          url: "/",
+        }}
         actions={
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <Link to="/" style={{ textDecoration: "none" }}>
-              <Button variant="secondary" icon={<ArrowLeftIcon size={14} />}>
-                Dashboard
-              </Button>
-            </Link>
-            <Button
-              variant="primary"
-              loading={isSaving}
-              onClick={handleSaveConfiguration}
-              icon={<CheckIcon size={16} />}
-            >
-              Save Configuration
-            </Button>
-          </div>
+          <Button
+            variant="primary"
+            loading={isSaving}
+            onClick={handleSaveConfiguration}
+            icon={<CheckIcon size={16} />}
+          >
+            Save Configuration
+          </Button>
         }
       />
 
