@@ -2,6 +2,7 @@ FROM node:20-alpine
 
 ARG SHOPIFY_API_KEY
 ENV SHOPIFY_API_KEY=$SHOPIFY_API_KEY
+ENV SCOPES="write_products,read_themes"
 EXPOSE 8081
 WORKDIR /app
 COPY web .

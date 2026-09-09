@@ -18,6 +18,10 @@ const billingConfig = {
 const shopify = shopifyApp({
   api: {
     apiVersion: LATEST_API_VERSION,
+    scopes: (process.env.SCOPES || "write_products,read_themes")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
     future: {
       customerAddressDefaultFix: true,
       lineItemBilling: true,
@@ -35,5 +39,16 @@ const shopify = shopifyApp({
   // This should be replaced with your preferred storage strategy
   sessionStorage: new SQLiteSessionStorage(DB_PATH),
 });
+
+// Guard against webhook registration failures crashing the entire OAuth callback
+const originalRegister = shopify.api.webhooks.register.bind(shopify.api.webhooks);
+shopify.api.webhooks.register = async (params) => {
+  try {
+    return await originalRegister(params);
+  } catch (error) {
+    console.warn("Non-fatal warning registering webhooks during OAuth:", error.message);
+    return {};
+  }
+};
 
 export default shopify;

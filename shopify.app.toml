@@ -7,13 +7,13 @@ embedded = true
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "write_products"
+scopes = "write_products,read_themes"
 
 [auth]
 redirect_urls = [ "https://example.com/api/auth" ]
 
 [webhooks]
-api_version = "2026-10"
+api_version = "2025-07"
 
 [build]
 automatically_update_urls_on_dev = true
