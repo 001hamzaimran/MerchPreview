@@ -18,6 +18,8 @@ export function PrintAreaEditor({
   selectedImage,
   printArea,
   onChangePrintArea,
+  isAreaEnabled = true,
+  onToggleAreaEnabled,
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
@@ -93,6 +95,17 @@ export function PrintAreaEditor({
           >
             Fit
           </Button>
+
+          {onToggleAreaEnabled && (
+            <Button
+              variant={isAreaEnabled ? "secondary" : "primary"}
+              size="sm"
+              onClick={() => onToggleAreaEnabled(!isAreaEnabled)}
+              style={{ marginLeft: "4px" }}
+            >
+              {isAreaEnabled ? "Turn Off Print Area" : "+ Enable Print Area"}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -114,35 +127,102 @@ export function PrintAreaEditor({
               draggable={false}
             />
 
-            {/* Print Area Overlay Box */}
-            <div
-              className={`pl-print-box ${isDragging ? "is-dragging" : ""}`}
-              style={{
-                left: `${xPercent}%`,
-                top: `${yPercent}%`,
-                width: `${wPercent}%`,
-                height: `${hPercent}%`,
-              }}
-              onPointerDown={handleDragStart}
-            >
-              {/* Internal grid guides */}
-              <div className="pl-print-box-grid" />
+            {/* Print Area Overlay Box or Disabled Overlay */}
+            {isAreaEnabled ? (
+              <div
+                className={`pl-print-box ${isDragging ? "is-dragging" : ""}`}
+                style={{
+                  left: `${xPercent}%`,
+                  top: `${yPercent}%`,
+                  width: `${wPercent}%`,
+                  height: `${hPercent}%`,
+                }}
+                onPointerDown={handleDragStart}
+              >
+                {/* Internal grid guides */}
+                <div className="pl-print-box-grid" />
 
-              {/* Center Label Badge */}
-              <div className="pl-print-box-badge">
-                <span>PRINT AREA</span>
-                <span>[{Math.round(wPercent)}% × {Math.round(hPercent)}%]</span>
+                {/* Center Label Badge */}
+                <div className="pl-print-box-badge">
+                  <span>PRINT AREA</span>
+                  <span>[{Math.round(wPercent)}% × {Math.round(hPercent)}%]</span>
+                </div>
+
+                {/* 8 Resize Handles */}
+                {HANDLES.map((handle) => (
+                  <div
+                    key={handle.id}
+                    className={`pl-resize-handle ${handle.className} ${activeHandle === handle.id ? "active" : ""}`}
+                    onPointerDown={(e) => handleResizeStart(e, handle.id)}
+                  />
+                ))}
               </div>
-
-              {/* 8 Resize Handles */}
-              {HANDLES.map((handle) => (
+            ) : (
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backgroundColor: "rgba(15, 23, 42, 0.4)",
+                  backdropFilter: "blur(2px)",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "20px",
+                  zIndex: 10,
+                }}
+              >
                 <div
-                  key={handle.id}
-                  className={`pl-resize-handle ${handle.className} ${activeHandle === handle.id ? "active" : ""}`}
-                  onPointerDown={(e) => handleResizeStart(e, handle.id)}
-                />
-              ))}
-            </div>
+                  style={{
+                    backgroundColor: "var(--color-surface)",
+                    color: "var(--color-text-main)",
+                    padding: "20px 24px",
+                    borderRadius: "var(--radius-md)",
+                    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)",
+                    maxWidth: "320px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    gap: "10px",
+                    border: "1px solid var(--color-border)",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "38px",
+                      height: "38px",
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(100, 116, 139, 0.12)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--color-text-muted)",
+                    }}
+                  >
+                    <LayersIcon size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: "0.9375rem" }}>
+                      No Print Area Configured
+                    </div>
+                    <p style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)", margin: "4px 0 0 0" }}>
+                      Customers will not be able to place artwork on this image view ({selectedImage?.title || "View"}).
+                    </p>
+                  </div>
+                  {onToggleAreaEnabled && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => onToggleAreaEnabled(true)}
+                      style={{ marginTop: "4px" }}
+                    >
+                      Enable Print Area
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div style={{ color: "var(--color-text-muted)", fontSize: "0.875rem" }}>

@@ -2,11 +2,15 @@ import React from "react";
 import { Card } from "../ui/Card";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
+import { Switch } from "../ui/Switch";
 import { SlidersIcon, RefreshCwIcon } from "../ui/Icons";
 
 export function PrintAreaControls({
   printArea,
   onChangePrintArea,
+  selectedImageTitle,
+  isAreaEnabled = true,
+  onToggleAreaEnabled,
 }) {
   const x = Math.round((printArea?.x ?? 0.25) * 100);
   const y = Math.round((printArea?.y ?? 0.20) * 100);
@@ -72,79 +76,131 @@ export function PrintAreaControls({
 
   return (
     <Card
-      title="Print Area Settings"
-      subtitle="Fine-tune position and dimension percentages"
+      title={selectedImageTitle ? `Print Area Settings (${selectedImageTitle})` : "Print Area Settings"}
+      subtitle={`Fine-tune position and dimension percentages${selectedImageTitle ? ` for ${selectedImageTitle}` : ""}`}
       headerAction={
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<RefreshCwIcon size={12} />}
-          onClick={() => setPreset("reset")}
-        >
-          Reset Area
-        </Button>
+        isAreaEnabled && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<RefreshCwIcon size={12} />}
+            onClick={() => setPreset("reset")}
+          >
+            Reset Area
+          </Button>
+        )
       }
     >
-      <div className="pl-controls-grid">
-        <Input
-          label="Position X"
-          hint="%"
-          type="number"
-          min="0"
-          max="95"
-          value={x}
-          onChange={(e) => handleNumericChange("x", e.target.value)}
-        />
-        <Input
-          label="Position Y"
-          hint="%"
-          type="number"
-          min="0"
-          max="95"
-          value={y}
-          onChange={(e) => handleNumericChange("y", e.target.value)}
-        />
-        <Input
-          label="Width"
-          hint="%"
-          type="number"
-          min="5"
-          max="100"
-          value={width}
-          onChange={(e) => handleNumericChange("width", e.target.value)}
-        />
-        <Input
-          label="Height"
-          hint="%"
-          type="number"
-          min="5"
-          max="100"
-          value={height}
-          onChange={(e) => handleNumericChange("height", e.target.value)}
-        />
+      {/* Enable/Disable Toggle Card */}
+      <div
+        style={{
+          padding: "12px 14px",
+          marginBottom: "16px",
+          borderRadius: "var(--radius-sm)",
+          backgroundColor: isAreaEnabled ? "var(--color-surface-subtle)" : "rgba(241, 245, 249, 0.7)",
+          border: "1px solid var(--color-border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+        }}
+      >
+        <div>
+          <div style={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--color-text-main)" }}>
+            Enable Print Area on this View
+          </div>
+          <div style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginTop: "2px" }}>
+            {isAreaEnabled
+              ? `Artwork can be positioned on ${selectedImageTitle || "this image"}.`
+              : `Artwork disabled. Customers will see ${selectedImageTitle || "this image"} without a print box.`}
+          </div>
+        </div>
+        {onToggleAreaEnabled && (
+          <Switch
+            checked={isAreaEnabled}
+            onChange={(checked) => onToggleAreaEnabled(checked)}
+          />
+        )}
       </div>
 
-      {/* Alignment Presets Bar */}
-      <div className="pl-presets-bar">
-        <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--color-text-muted)", marginRight: "4px" }}>
-          Quick Align:
-        </span>
-        <Button variant="secondary" size="sm" onClick={() => setPreset("center")}>
-          Center
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => setPreset("top-center")}>
-          Top Center
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => setPreset("chest-pocket")}>
-          Chest Pocket
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => setPreset("fit-max")}>
-          Full Print
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => setPreset("square")}>
-          1:1 Square
-        </Button>
-      </div>
+      {!isAreaEnabled ? (
+        <div
+          style={{
+            padding: "24px 16px",
+            textAlign: "center",
+            color: "var(--color-text-muted)",
+            fontSize: "0.875rem",
+            backgroundColor: "var(--color-surface-subtle)",
+            borderRadius: "var(--radius-sm)",
+            border: "1px dashed var(--color-border)",
+          }}
+        >
+          Print area is turned off for this angle. Toggle the switch above if you want customer artwork to appear here.
+        </div>
+      ) : (
+        <>
+          <div className="pl-controls-grid">
+            <Input
+              label="Position X"
+              hint="%"
+              type="number"
+              min="0"
+              max="95"
+              value={x}
+              onChange={(e) => handleNumericChange("x", e.target.value)}
+            />
+            <Input
+              label="Position Y"
+              hint="%"
+              type="number"
+              min="0"
+              max="95"
+              value={y}
+              onChange={(e) => handleNumericChange("y", e.target.value)}
+            />
+            <Input
+              label="Width"
+              hint="%"
+              type="number"
+              min="5"
+              max="100"
+              value={width}
+              onChange={(e) => handleNumericChange("width", e.target.value)}
+            />
+            <Input
+              label="Height"
+              hint="%"
+              type="number"
+              min="5"
+              max="100"
+              value={height}
+              onChange={(e) => handleNumericChange("height", e.target.value)}
+            />
+          </div>
+
+          {/* Alignment Presets Bar */}
+          <div className="pl-presets-bar">
+            <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--color-text-muted)", marginRight: "4px" }}>
+              Quick Align:
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => setPreset("center")}>
+              Center
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setPreset("top-center")}>
+              Top Center
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setPreset("chest-pocket")}>
+              Chest Pocket
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setPreset("fit-max")}>
+              Full Print
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setPreset("square")}>
+              1:1 Square
+            </Button>
+          </div>
+        </>
+      )}
     </Card>
   );
 }

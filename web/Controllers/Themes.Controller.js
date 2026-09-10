@@ -25,6 +25,18 @@ export const getThemeEditorUrl = async (req, res) => {
         }
       } catch (graphqlErr) {
         console.warn("Could not query published main theme via GraphQL:", graphqlErr.message);
+        if (
+          graphqlErr?.response?.code === 401 ||
+          graphqlErr?.response?.status === 401 ||
+          graphqlErr?.networkStatusCode === 401 ||
+          graphqlErr?.message?.includes("401 Unauthorized")
+        ) {
+          if (session?.id) {
+            try {
+              await shopify.config.sessionStorage.deleteSession(session.id);
+            } catch (_) {}
+          }
+        }
       }
     }
 
@@ -85,7 +97,7 @@ export const verifyBlock = async (req, res) => {
     const updated = await Settings.findOneAndUpdate(
       { shop },
       { isAppBlockAdded: true },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     res.status(200).json({

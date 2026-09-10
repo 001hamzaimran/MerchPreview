@@ -19,9 +19,10 @@ export default function Dashboard() {
   const [configurations, setConfigurations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isBlockAdded, setIsBlockAdded] = useState(false);
+  const [isCloudinaryConfigured, setIsCloudinaryConfigured] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Fetch configurations and block status strictly from MongoDB for this store
+  // Fetch configurations, settings, and block status strictly from MongoDB for this store
   useEffect(() => {
     let isMounted = true;
 
@@ -39,6 +40,7 @@ export default function Dashboard() {
               imageId: item.imageId,
               imageTitle: item.imageTitle || "Front View",
               printArea: item.printArea,
+              printAreas: item.printAreas || {},
               settings: item.settings,
               status: item.status || "Active",
               lastUpdated: item.updatedAt ? new Date(item.updatedAt).toLocaleDateString() : "Recently",
@@ -67,8 +69,23 @@ export default function Dashboard() {
       }
     };
 
+    const fetchSettingsStatus = async () => {
+      try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data && data.cloudName && data.apiKey) {
+            setIsCloudinaryConfigured(true);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not check Cloudinary status:", e);
+      }
+    };
+
     fetchDbConfigs();
     fetchBlockStatus();
+    fetchSettingsStatus();
 
     // Re-check block status when window regains focus (e.g. after returning from theme editor)
     const onWindowFocus = () => {
@@ -170,6 +187,11 @@ export default function Dashboard() {
         hasConfiguredProducts={configuredProductsCount > 0}
         configuredCount={configuredProductsCount}
         isBlockAdded={isBlockAdded}
+        isCloudinaryConfigured={isCloudinaryConfigured}
+        onCloudinaryConfigured={() => {
+          setIsCloudinaryConfigured(true);
+          setToastMessage("🎉 Cloudinary configuration saved successfully!");
+        }}
         onBlockVerified={() => {
           setIsBlockAdded(true);
           setToastMessage("🎉 MerchPreview block verified! Setup is 100% complete.");

@@ -29,11 +29,12 @@ export const getConfigurationByProduct = async (req, res) => {
     const shop = res.locals?.shopify?.session?.shop || req.query?.shop;
     const { productId } = req.params;
 
-    if (!shop) {
-      return res.status(200).json(null);
+    const filter = { productId };
+    if (shop) {
+      filter.shop = shop;
     }
 
-    const config = await Configuration.findOne({ shop, productId });
+    const config = await Configuration.findOne(filter);
     res.status(200).json(config);
   } catch (error) {
     console.error("Error fetching product configuration:", error);
@@ -55,6 +56,7 @@ export const saveConfiguration = async (req, res) => {
       imageId,
       imageTitle,
       printArea,
+      printAreas,
       settings,
       status,
     } = req.body;
@@ -77,6 +79,7 @@ export const saveConfiguration = async (req, res) => {
         imageId: imageId || "",
         imageTitle: imageTitle || "Front View",
         printArea: printArea || { x: 0.25, y: 0.20, width: 0.50, height: 0.40 },
+        printAreas: printAreas || {},
         settings: settings || {
           enabled: true,
           acceptedFormats: ["png", "jpg", "webp", "svg"],
@@ -85,7 +88,7 @@ export const saveConfiguration = async (req, res) => {
         },
         status: status || "Active",
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     res.status(200).json({

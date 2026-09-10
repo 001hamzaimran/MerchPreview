@@ -18,8 +18,13 @@
    Trigger Button
    ========================================================================== */
 .mp-block-container {
+  display: none;
   margin: 16px 0;
   font-family: var(--mp-font);
+}
+
+.mp-block-container.mp-visible {
+  display: block;
 }
 
 .mp-trigger-btn {

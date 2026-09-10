@@ -8,6 +8,7 @@ export function ConfigurationSummary({
   product,
   selectedImage,
   printArea,
+  isAreaEnabled = true,
   isSaving = false,
   onSave,
   onCancel,
@@ -36,14 +37,14 @@ export function ConfigurationSummary({
         <div className="pl-summary-item">
           <span className="pl-summary-label">Print Area (X, Y)</span>
           <span className="pl-summary-val">
-            {x}%, {y}%
+            {isAreaEnabled ? `${x}%, ${y}%` : "Disabled"}
           </span>
         </div>
 
         <div className="pl-summary-item">
           <span className="pl-summary-label">Print Dimensions (W × H)</span>
           <span className="pl-summary-val">
-            {width}% × {height}%
+            {isAreaEnabled ? `${width}% × ${height}%` : "None"}
           </span>
         </div>
 

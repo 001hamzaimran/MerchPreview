@@ -17,7 +17,13 @@
 
       // Notify backend that theme app block is rendered on storefront
       try {
-        fetch("/api/themes/verify-block", { method: "POST", keepalive: true }).catch(() => {});
+        const shopDomain = window.Configuration?.store || window.Shopify?.shop || window.location.hostname;
+        const proxyVerifyUrl = `/apps/proxy/verify-block?shop=${encodeURIComponent(shopDomain)}`;
+        const directVerifyUrl = `/customapi/verify-block?shop=${encodeURIComponent(shopDomain)}`;
+
+        fetch(proxyVerifyUrl, { method: "POST", keepalive: true })
+          .catch(() => fetch(directVerifyUrl, { method: "POST", keepalive: true }))
+          .catch(() => {});
       } catch (e) {
         // ignore
       }
@@ -65,25 +71,61 @@
       let startX = 0;
       let startY = 0;
 
+      function applyConfig(data) {
+        if (!data) return;
+        if (data.printAreas && typeof data.printAreas === "object" && Object.keys(data.printAreas).length > 0) {
+          const keys = Object.keys(data.printAreas);
+          const enabledKey = keys.find((k) => data.printAreas[k]?.enabled !== false) || keys[0];
+          printArea = data.printAreas[enabledKey] || data.printArea || printArea;
+        } else if (data.printArea) {
+          printArea = data.printArea;
+        }
+        applyPrintAreaStyles();
+      }
+
       // Fetch configured print area from backend API or App Proxy
       async function loadPrintAreaConfig() {
+        if (block._mpConfiguration) {
+          applyConfig(block._mpConfiguration);
+          return;
+        }
+
         try {
-          const res = await fetch(`/api/configurations/${productId}`);
+          const shop = window.Configuration?.store || window.Shopify?.shop || window.location.hostname;
+          const directUrl = `/customapi/configuration?shop=${encodeURIComponent(shop)}&productId=${encodeURIComponent(productId)}`;
+          const proxyUrl = `/apps/proxy/configuration?productId=${encodeURIComponent(productId)}`;
+
+          let res = await fetch(directUrl);
+          if (!res.ok && res.status === 404) {
+            res = await fetch(proxyUrl);
+          }
           if (res.ok) {
-            const data = await res.json();
-            if (data && data.printArea) {
-              printArea = data.printArea;
-              applyPrintAreaStyles();
+            const result = await res.json();
+            if (result && result.configuration) {
+              block._mpConfiguration = result.configuration;
+              applyConfig(result.configuration);
+              return;
             }
           }
         } catch (e) {
           // Fallback to default print area
-          applyPrintAreaStyles();
         }
+        applyPrintAreaStyles();
       }
+
+      block.addEventListener("mp:config-loaded", (e) => {
+        if (e.detail) {
+          applyConfig(e.detail);
+        }
+      });
 
       function applyPrintAreaStyles() {
         if (!printBox) return;
+        if (printArea && printArea.enabled === false) {
+          printBox.style.display = "none";
+          return;
+        }
+        printBox.style.display = "block";
         printBox.style.left = `${(printArea.x * 100).toFixed(2)}%`;
         printBox.style.top = `${(printArea.y * 100).toFixed(2)}%`;
         printBox.style.width = `${(printArea.width * 100).toFixed(2)}%`;
@@ -296,6 +338,91 @@
         });
       }
 
+      function generateMockupImage() {
+        return new Promise((resolve) => {
+          const productImgEl = modal.querySelector(".mp-product-img");
+          const viewport = modal.querySelector(".mp-canvas-viewport");
+          const printBoxEl = modal.querySelector(".mp-print-box");
+          if (!productImgEl || !viewport || !artworkDataUrl) {
+            return resolve(null);
+          }
+
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+          if (!ctx) return resolve(null);
+
+          // Use natural dimensions of the product image for high-res output
+          const naturalW = productImgEl.naturalWidth || viewport.clientWidth || 800;
+          const naturalH = productImgEl.naturalHeight || viewport.clientHeight || 800;
+          canvas.width = Math.max(800, naturalW);
+          canvas.height = Math.max(800, naturalH);
+
+          const baseImg = new Image();
+          baseImg.crossOrigin = "anonymous";
+          baseImg.onload = () => {
+            try {
+              // 1. Draw base product image
+              ctx.drawImage(baseImg, 0, 0, canvas.width, canvas.height);
+
+              // 2. Calculate print area on canvas
+              const targetX = printArea.x * canvas.width;
+              const targetY = printArea.y * canvas.height;
+              const targetW = printArea.width * canvas.width;
+              const targetH = printArea.height * canvas.height;
+
+              // 3. Load customer artwork
+              const artImg = new Image();
+              artImg.crossOrigin = "anonymous";
+              artImg.onload = () => {
+                try {
+                  // Clip to print box
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.rect(targetX, targetY, targetW, targetH);
+                  ctx.clip();
+
+                  const centerX = targetX + targetW / 2;
+                  const centerY = targetY + targetH / 2;
+
+                  const uiBoxW = printBoxEl?.clientWidth || 200;
+                  const ratio = targetW / uiBoxW;
+
+                  const artAspect = (artImg.naturalWidth || 1) / (artImg.naturalHeight || 1);
+                  const boxAspect = targetW / targetH;
+                  let fitW, fitH;
+                  if (artAspect > boxAspect) {
+                    fitW = targetW;
+                    fitH = targetW / artAspect;
+                  } else {
+                    fitH = targetH;
+                    fitW = targetH * artAspect;
+                  }
+
+                  ctx.translate(centerX + posX * ratio, centerY + posY * ratio);
+                  ctx.rotate((rotation * Math.PI) / 180);
+                  ctx.scale(scale, scale);
+                  ctx.drawImage(artImg, -fitW / 2, -fitH / 2, fitW, fitH);
+                  ctx.restore();
+
+                  const mockupData = canvas.toDataURL("image/png");
+                  resolve(mockupData);
+                } catch (drawErr) {
+                  console.warn("Canvas artwork composite error:", drawErr);
+                  resolve(null);
+                }
+              };
+              artImg.onerror = () => resolve(null);
+              artImg.src = artworkDataUrl;
+            } catch (drawBaseErr) {
+              console.warn("Canvas base image composite error:", drawBaseErr);
+              resolve(null);
+            }
+          };
+          baseImg.onerror = () => resolve(null);
+          baseImg.src = productImgEl.src;
+        });
+      }
+
       // Apply & Add to Cart
       if (applyBtn) {
         applyBtn.addEventListener("click", async () => {
@@ -303,18 +430,72 @@
 
           applyBtn.disabled = true;
           const originalText = applyBtn.innerHTML;
-          applyBtn.innerHTML = `<span>Saving & Adding to Cart...</span>`;
+          applyBtn.innerHTML = `<span>Uploading to Cloudinary...</span>`;
 
           try {
-            // Storefront Line Item Properties (visible to merchants in Admin Order details)
+            // 1. Generate composite mockup (product image + artwork)
+            let mockupDataUrl = null;
+            try {
+              mockupDataUrl = await generateMockupImage();
+            } catch (canvasErr) {
+              console.warn("Mockup composite generation fallback:", canvasErr);
+            }
+
+            // 2. Upload both images to Cloudinary via backend API
+            const shopDomain = window.Configuration?.store || window.Shopify?.shop || window.location.hostname;
+            const directUploadUrl = `/customapi/upload-design?shop=${encodeURIComponent(shopDomain)}`;
+            const proxyUploadUrl = `/apps/proxy/upload-design?shop=${encodeURIComponent(shopDomain)}`;
+
+            let uploadResult = null;
+            try {
+              const uploadPayload = {
+                shop: shopDomain,
+                artwork: artworkDataUrl,
+                mockup: mockupDataUrl,
+                artworkName: artworkFile?.name || "custom-artwork.png",
+                productId: productId,
+              };
+
+              let uploadResponse = await fetch(directUploadUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(uploadPayload),
+              });
+
+              if (!uploadResponse.ok && uploadResponse.status === 404) {
+                uploadResponse = await fetch(proxyUploadUrl, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(uploadPayload),
+                });
+              }
+
+              if (uploadResponse.ok) {
+                uploadResult = await uploadResponse.json();
+                console.log("[MerchPreview] Cloudinary upload successful:", uploadResult);
+              } else {
+                console.warn("[MerchPreview] Cloudinary upload response not OK:", uploadResponse.status);
+              }
+            } catch (uploadErr) {
+              console.error("[MerchPreview] Error calling /customapi/upload-design:", uploadErr);
+            }
+
+            // 3. Prepare Line Item Properties with both Cloudinary links
+            const artworkLink = uploadResult?.artworkUrl || "";
+            const mockupLink = uploadResult?.mockupUrl || "";
+
             const customProperties = {
+              ...(artworkLink ? { "Custom Artwork": artworkLink } : {}),
+              ...(mockupLink ? { "Preview Mockup": mockupLink } : {}),
               "Artwork Name": artworkFile?.name || "custom-design.png",
               "Print Area Placement": `X:${(printArea.x * 100).toFixed(0)}% Y:${(printArea.y * 100).toFixed(0)}% W:${(printArea.width * 100).toFixed(0)}% H:${(printArea.height * 100).toFixed(0)}%`,
               "Artwork Scale": `${(scale * 100).toFixed(0)}%`,
               "Artwork Rotation": `${rotation}°`,
             };
 
-            // Post to Shopify Ajax Cart API
+            applyBtn.innerHTML = `<span>Adding to Cart...</span>`;
+
+            // 4. Post to Shopify Ajax Cart API
             const cartResponse = await fetch("/cart/add.js", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -333,7 +514,6 @@
               applyBtn.innerHTML = `<span>✓ Added to Cart!</span>`;
               setTimeout(() => {
                 closeModal();
-                // Redirect to cart or trigger cart drawer
                 window.location.href = "/cart";
               }, 600);
             } else {
@@ -377,6 +557,85 @@
 })();
 
 window.addEventListener("DOMContentLoaded", () => {
-  const { productId, store, productPrice, variantId } = window.Configuration;
+  const { productId, store, productPrice, variantId } = window.Configuration || {};
   console.log(productId, store, productPrice, variantId);
+
+  // call this API and console here /customapi/getallproducts
+  const shopDomain = store || window.Shopify?.shop || window.location.hostname;
+  const directUrl = `/customapi/getallproducts?shop=${encodeURIComponent(shopDomain)}`;
+  const proxyUrl = `/apps/proxy/getallproducts`;
+
+  function handleProductsResponse(data) {
+    console.log("/customapi/getallproducts response:", data);
+
+    const blocks = document.querySelectorAll(".mp-block-container");
+    if (!blocks.length) return;
+
+    blocks.forEach((block) => {
+      const blockProductId = String(block.dataset.productId || productId || "");
+      const cleanBlockId = blockProductId.replace(/^gid:\/\/shopify\/Product\//, "");
+
+      // Match configuration from API response
+      let matchedConfig = null;
+      if (data?.configurations && Array.isArray(data.configurations)) {
+        matchedConfig = data.configurations.find((cfg) => {
+          const cleanCfgId = String(cfg.productId || "").replace(/^gid:\/\/shopify\/Product\//, "");
+          return cleanCfgId === cleanBlockId && cfg.status !== "Draft";
+        });
+      }
+
+      const isConfigured = Boolean(
+        matchedConfig ||
+        data?.configuredProductIds?.some((id) => {
+          const cleanId = String(id).replace(/^gid:\/\/shopify\/Product\//, "");
+          return cleanId === cleanBlockId;
+        }) ||
+        data?.products?.some((p) => {
+          const cleanId = String(p.id).replace(/^gid:\/\/shopify\/Product\//, "");
+          return cleanId === cleanBlockId && p.isConfigured;
+        })
+      );
+
+      if (isConfigured) {
+        console.log(`[MerchPreview] Product ${cleanBlockId} is configured. Displaying personalization component.`);
+        block.style.display = "block";
+        block.classList.add("mp-visible");
+        if (matchedConfig) {
+          block._mpConfiguration = matchedConfig;
+          block.dispatchEvent(new CustomEvent("mp:config-loaded", { detail: matchedConfig }));
+        }
+      } else {
+        console.log(`[MerchPreview] Product ${cleanBlockId} is not configured. Personalization component hidden.`);
+        block.style.display = "none";
+        block.classList.remove("mp-visible");
+      }
+    });
+  }
+
+  fetch(directUrl)
+    .then((res) => {
+      if (!res.ok && res.status === 404) {
+        return fetch(proxyUrl);
+      }
+      return res;
+    })
+    .then((res) => res.json())
+    .then((data) => {
+      handleProductsResponse(data);
+    })
+    .catch((err) => {
+      fetch(proxyUrl)
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("/customapi/getallproducts response via proxy:", data);
+          handleProductsResponse(data);
+        })
+        .catch((proxyErr) => {
+          console.error("Error calling /customapi/getallproducts:", err);
+          document.querySelectorAll(".mp-block-container").forEach((block) => {
+            block.style.display = "none";
+            block.classList.remove("mp-visible");
+          });
+        });
+    });
 });

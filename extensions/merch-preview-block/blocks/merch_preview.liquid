@@ -19,6 +19,7 @@
   data-product-title="{{ product.title | escape }}"
   data-product-image="{{ product.featured_image | image_url: width: 1200 }}"
   data-variant-id="{{ product.selected_or_first_available_variant.id }}"
+  style="display: none;"
 >
   {% comment %} Trigger Button {% endcomment %}
   <button

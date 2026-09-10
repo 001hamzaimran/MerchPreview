@@ -12,6 +12,19 @@ export const getProducts = async (req, res) => {
     res.status(200).json(response?.data?.products?.nodes || []);
   } catch (error) {
     console.warn("Could not query products from Shopify Admin GraphQL:", error.message);
+    if (
+      error?.response?.code === 401 ||
+      error?.response?.status === 401 ||
+      error?.networkStatusCode === 401 ||
+      error?.message?.includes("401 Unauthorized")
+    ) {
+      const session = res.locals?.shopify?.session;
+      if (session?.id) {
+        try {
+          await shopify.config.sessionStorage.deleteSession(session.id);
+        } catch (_) {}
+      }
+    }
     res.status(200).json([]);
   }
 };

@@ -73,7 +73,7 @@ export const saveSettings = async (req, res) => {
         autoValidateDpi: autoValidateDpi ?? true,
         autoSaveCanvas: autoSaveCanvas ?? true,
       },
-      { upsert: true, new: true }
+      { upsert: true, returnDocument: "after" }
     );
 
     res.status(200).json({

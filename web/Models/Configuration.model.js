@@ -34,6 +34,10 @@ const ConfigurationSchema = new mongoose.Schema(
       width: { type: Number, default: 0.50 },
       height: { type: Number, default: 0.40 },
     },
+    printAreas: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     settings: {
       enabled: { type: Boolean, default: true },
       acceptedFormats: { type: [String], default: ["png", "jpg", "webp", "svg"] },

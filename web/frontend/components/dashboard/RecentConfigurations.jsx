@@ -58,6 +58,8 @@ export function RecentConfigurations({
               const wPct = Math.round(width * 100);
               const hPct = Math.round(height * 100);
 
+              const isAreaDisabled = cfg.printArea?.enabled === false;
+
               return (
                 <tr key={cfg.id}>
                   <td>
@@ -79,9 +81,22 @@ export function RecentConfigurations({
                     </span>
                   </td>
                   <td>
-                    <span className="pl-coord-pill">
-                      {wPct}% × {hPct}% at ({xPct}%, {yPct}%)
-                    </span>
+                    {isAreaDisabled ? (
+                      <span
+                        className="pl-coord-pill"
+                        style={{
+                          backgroundColor: "rgba(100, 116, 139, 0.12)",
+                          color: "var(--color-text-muted)",
+                          border: "1px dashed var(--color-border)",
+                        }}
+                      >
+                        No Print Area
+                      </span>
+                    ) : (
+                      <span className="pl-coord-pill">
+                        {wPct}% × {hPct}% at ({xPct}%, {yPct}%)
+                      </span>
+                    )}
                   </td>
                   <td>
                     <StatusBadge status={cfg.status || "Active"} />
@@ -97,7 +112,11 @@ export function RecentConfigurations({
                         variant="secondary"
                         size="sm"
                         icon={<EditIcon size={14} />}
-                        onClick={() => navigate(`/configuration?productId=${cfg.productId}&configId=${cfg.id}`)}
+                        onClick={() =>
+                          navigate(
+                            `/configuration?productId=${encodeURIComponent(cfg.productId)}&configId=${cfg.id}&imageId=${encodeURIComponent(cfg.imageId || "")}`
+                          )
+                        }
                         title="Edit Configuration"
                       >
                         Edit
